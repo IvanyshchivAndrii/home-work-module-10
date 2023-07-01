@@ -17,21 +17,20 @@ class Record:
     def add_phone(self, phone):
         if phone not in self.phones:
             self.phones.append(phone)
-            print(f'{phone.phone} was added to {self.name.value}\'s list of phones')
         else:
             print(f'{phone.phone} already exist!')
 
     def remove_phone(self, phone):
-        if phone in self.phones:
-            self.phones.remove(phone)
-            print(f'{phone.phone} was removed from list of phones')
+        phones_dict = {phone.phone: index for index, phone in enumerate(self.phones)}
+        if phone.phone in phones_dict.keys():
+            del self.phones[phones_dict[phone.phone]]
         else:
             print(f'Sorry, {phone.phone} wasn\'t founded. Try again.')
 
     def change_phone(self, from_phone, to_phone):
-        if from_phone in self.phones:
-            self.phones[self.phones.index(from_phone)] = to_phone
-            print(f'{from_phone.phone} was changed to {to_phone.phone} in list of phones')
+        phones_dict = {phone.phone: index for index, phone in enumerate(self.phones)}
+        if from_phone.phone in phones_dict.keys():
+            self.phones[phones_dict[from_phone.phone]] = to_phone
         else:
             print(f'Sorry, {from_phone.phone} wasn\'t founded. Try again.')
 
@@ -53,14 +52,16 @@ class Phone(Field):
 def input_error(func):
     def inner(*args):
         try:
-            if 1 < len(args) <= 2 and args[0] != 'phone':
+            if 1 < len(args) <= 2 and args[0] not in ['phone', 'del']:
                 print('Enter telephone number')
             elif len(args) <= 1 and args[0] == 'phone':
                 print('Enter Username')
             elif len(args) <= 1 and args[0] in ['add']:
                 print('Enter Username and telephone number')
-            elif len(args) <= 1 and args[0] in ['add']:
+            elif len(args) <= 2 and args[0] in ['add', 'change']:
                 print('Enter Username and telephone number')
+            elif len(args) <= 3 and args[0] in ['change']:
+                print('Enter 2nd telephone number')
             else:
                 return func(*args)
         except KeyError:
@@ -99,13 +100,31 @@ def add_contact(*args):
 
 
 @input_error
+def delete_contact(*args):
+    if args[1].title() in PHONEBOOK:
+        PHONEBOOK.pop(args[1].title())
+        print(f'Contact {args[1].title()} has been deleted from PHONEBOOK')
+    else:
+        print(f'Contact {args[1].title()} does not exist!!')
+    return ''
+
+
+@input_error
 def add_phone_to_contact(*args):
     if args[1].title() in PHONEBOOK:
         phone = Phone(args[2])
         PHONEBOOK[args[1].title()].add_phone(phone)
         print(f'Phone {args[2]} has been added to contact {args[1].title()}')
     else:
-        print(f'Contact {args[1]} is not exist!!')
+        print(f'Contact {args[1].title()} does not exist!!')
+    return ''
+
+
+@input_error
+def remove_phone_contact(*args):
+    if args[1].title() in PHONEBOOK:
+        phone = Phone(args[2])
+        PHONEBOOK[args[1].title()].remove_phone(phone)
     return ''
 
 
@@ -114,7 +133,7 @@ def change_contact(*args):
     old_phone = Phone(args[2])
     new_phone = Phone(args[3])
     if args[1].title() in PHONEBOOK:
-        PHONEBOOK[args[1]].change_phone(old_phone, new_phone)
+        PHONEBOOK[args[1].title()].change_phone(old_phone, new_phone)
         print(f'Phone {old_phone.phone} in PHONEBOOK has been changed to {new_phone.phone}')
     else:
         print(f'There is no {args[1]} in PHONEBOOK !')
@@ -123,23 +142,26 @@ def change_contact(*args):
 
 @input_error
 def show_phone(*args):
-    print(f'The number you have searched: {list(i.phone for i in PHONEBOOK[args[1]].phones)}')
+    print(f'The number you have searched: {list(i.phone for i in PHONEBOOK[args[1].title()].phones)}')
     return ''
 
 
 def show_all_contacts(*args):
-    num, name, tel = '№', 'Name', 'Phone'
+    num, name, tel = '№', 'Name', 'Phones'
     print(f'|{num:^5}|{name:^10}|{tel:^15}|')
     for k, v in enumerate(PHONEBOOK):
-        phones_list = '\n'.join(i.phone for i in PHONEBOOK[v].phones)
-        print(f'|{k:^5}|{v:^10}|{phones_list:^15}|')
+        phones_list = ', '.join(i.phone for i in PHONEBOOK[v].phones)
+        len_num = len(phones_list) if len(phones_list) > 15 else 15
+        print(f'|{k:^5}|{v:^10}|{phones_list:^{len_num}}|')
     return ''
 
 
 OPERATIONS = {
     'hello': say_hallo,
     'new': add_contact,
-    'add':add_phone_to_contact,
+    'del': delete_contact,
+    'add': add_phone_to_contact,
+    'remove': remove_phone_contact,
     'change': change_contact,
     'phone': show_phone,
     'show all': show_all_contacts,
@@ -154,18 +176,21 @@ def get_hendler(*args):
 def main():
     flag = True
     print('Hello!! This is your phonebook assistant. Let\'s start!!')
-    while flag:
-        request = input('Enter request>>>').lower()
-        request_list = request.split()
+    try:
+        while flag:
+            request = input('Enter request>>>').lower()
+            request_list = request.split()
 
-        if request_list[0] in list(OPERATIONS):
-            get_hendler(*request.split())(*request.split())
-        elif ' '.join(request_list[0:2]) == 'show all':
-            show_all_contacts()
-        elif request in ['exit', 'close', 'good bye']:
-            flag = False
-        else:
-            print('Please, write one of the command')
+            if request_list[0] in list(OPERATIONS):
+                get_hendler(*request.split())(*request.split())
+            elif ' '.join(request_list[0:2]) == 'show all':
+                show_all_contacts()
+            elif request in ['exit', 'close', 'good bye']:
+                flag = False
+            else:
+                print('Please, write one of the command')
+    except IndexError:
+        print('Enter command and values')
 
 
 if __name__ == '__main__':
