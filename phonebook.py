@@ -125,6 +125,7 @@ def remove_phone_contact(*args):
     if args[1].title() in PHONEBOOK:
         phone = Phone(args[2])
         PHONEBOOK[args[1].title()].remove_phone(phone)
+        print(f'Phone {args[2]} has been removed from contact {args[1].title()}')
     return ''
 
 
